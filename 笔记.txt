@@ -1,0 +1,152 @@
+ ==============  第一节：Meterail Design==============================
+ 
+ 
+ 
+   是什么？
+   https://material.io/
+   视觉设计语音。，统一一种接近真实实物的视觉效果
+   
+   以设置（Settings）作为说明：
+   1 位置： 除了 help & feedback 以为最下面的地方
+   2 作用： 
+     必须是精选的一些能够让用户快速明白意思的，有提供选项给用户的，而且是根据优先级排列
+	 的items。
+   3. 如何选择恰当的设置项
+   4. 做出正确的default值
+   
+   2-8 原则
+
+====================================================================
+    控件的兼容性
+	v4 v7 v13 数字代表的是支持的api 的version
+	讲解button
+	theme 方式为什么能自适应 5.0 一下的版本呢？
+	AppCompatButton
+	android.support.v4.app.Button
+	一样的，一模一样
+	
+	CircleImageView
+	EdgeEffectCompat： 将layout滑倒底后边界的波浪线
+	
+=====================	AppCompatActivity  =========================
+作用：兼容。
+AppCompatActivity extends FragmentActivity extends Activity
+
+原理： 继承了AppCompatActivity 的Activity 都会在解析XML 的时候，将xml里面所有的系统控件转换为
+       appCompatButton。
+	   它的源码是怎样的呢？
+    所谓的兼容，就是一个着色问题！！！
+	AppCompatDelegate 的工作就是涂色。
+	替换：widget着色是通过这个widget 的layout 在inflation 的时候，被AppCompatDelegate 拦截下来，然后根据
+	控件的名字，强制被系统转换成为 以AppCompat 开头的控件。
+	
+
+	作业： 分析 AppCompatDelegate 解析的源码...AppCompatViewInflater
+	AppCompatViewInflater 可以给我们开发提供热换肤原理
+	
+===================== LinearLayoutCompat 源码===================
+目的： 教大家一套分析 ViewGroup 的原则
+     1.这个类是干什么的，是控件还是组件，看他的初始化在干什么
+	 2.找到入口，一般是构造器
+	 3.找关键方法：onMeasure  onLayout   onDraw
+	 onMeasure 是 计算子控件的大小，同时计算自己的大小。自己的宽高是由子空间的宽高决定的，根据摆放的方向不同而算法不同
+	 onLayout 是将子控件的上下左右位置进行确定。然后布局到layout上面
+	 onDraw    只用来画layout 自己的分割线。
+	
+=======================RecyclerView 横线绘制================
+上下左右四个坐标。然后会有一个横线的厚度。然后在RecyclerView 的canvas 上面画这个值得的矩形。矩形填充的内容就是我们定义
+的drawable
+
+======================= RecyclerView 添加header&footer========================
+
+方案 1：
+在Adapter 里面添加Type 来动态加载 header&footer
+
+方案 2：
+仿照ListView，让用户自定义HeaderVIew & FooterView， 然后，包装这个用户传的Adapter
+
+Recyclerview ：每一个部分都是职责分明的。
+               无论你怎么用这个item，你都必须遵守我的基本原则：view 必须是ViewHolder 子类
+			   ViewHolder 是所有Item 的父类，所有的Item 都具备了这个基本的功能。
+			   HeaderVIew & FooterView只是特殊位置上的一个Item 类。
+			   使用了装饰设计模式...
+			   
+========================  RecyclerView 嵌套滑动问题============================
+RecyclerView Big 嵌套RecyclerView Hor
+最终是一个事件分发的问题。
+
+问题一： 滑动没有根据斜率来计算
+按键的分发，应该是分发给相对位移更大的RecyclerView。
+但是，问题是，事件分发没有考虑到相对位移。
+核心思想： 拦截onInterceptTouchEvent
+
+问题二：当item 横线或者垂直滑动的时候，后面的事件没有被收到
+
+
+========================= RecyclerView 优化=======================
+缓存机制
+
+
+RecycledViewPool：
+一种用于多个RecyclerView之间共享View 的缓存。
+应用场景：viewPager + adapter + tab 
+
+private SparseArray<ArrayList<ViewHolder>> mScrap =
+                new SparseArray<ArrayList<ViewHolder>>();
+				
+RecyclerView 三级缓存：
+   第一级缓存
+
+a. mChangedScrap   RecyclerView中需要改变的Viewholder
+b. mAttachedScrap  还没有和RecyclerView 分离的ViewHolder
+c. mCachedViews    RecyclerView 的 ViewHolder 的缓存
+
+   第二级
+d. mViewCacheExtension   提供给开放者自己创建的缓存
+   
+   第三级
+e. mRecyclerPool     缓存池
+
+
+================== RecyclerView ItemTouchHelper 源码分析已经拓展 =================
+
+ItemTouchHelper
+作用：实现Recyclerview 拖拽效果的帮助类。
+      用于和用户进行交互的主要环节：Callback。
+
+动画：
+  两类
+    上下移动，move
+	左右侧滑  swipe
+  原理：
+  第一部分：手指没有和屏幕分离
+         ItemTouchUIUtilImpl.draw();
+		 
+  第二部分：手指和屏幕分离
+         RecoverAnimation
+         
+
+误区： ItemDecoration ！= 分割线
+
+猜想 MotionEvent.ACTION_MOVE 干了什么？ 移动view！计算滑动距离
+mRecyclerView.invalidate(); 触发 onDraw
+
+===============  ItemTouchHelper 拓展   ===============
+
+为什么onclick 事件没有发送上来？
+实现方案：
+重写？
+比较暴力，思路很清晰：
+1 onclick 的传递
+2 销毁动画的实现
+
+
+，代理？
+反射
+	  
+			   
+   
+   
+ 
+   
+      
